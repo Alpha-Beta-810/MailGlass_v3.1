@@ -1,10 +1,51 @@
-# Hybrid Phishing Email Detection System
+# 🔍MailGlass_v3.1: A Hybrid Phishing Email Detection System
 
-A hybrid phishing email detector that combines **blacklist-based checks**
+MailGlass is a hybrid phishing email detector that combines **blacklist-based checks**
 (whitelist, PhishTank, VirusTotal) with an **ML fallback classifier**,
 plus supporting domain intelligence (WHOIS domain age, IDN/homograph and
 typosquat detection) and a weighted, explainable risk score. Usable from
 the command line or through a Flask web dashboard.
+
+## 🚀 What's New in Version 3.1
+
+Version **3.1** builds upon the existing hybrid phishing detection platform by introducing **persistent scan history** using SQLite. Scan results are now preserved across application restarts, allowing users to revisit previous analyses, export historical reports, and manage scan history directly from the web interface.
+
+| Feature | Version 3.0 | Version 3.1 |
+|:--------|:-----------:|:-----------:|
+| Flask Dashboard | ✅ | ✅ |
+| Machine Learning Detection | ✅ | ✅ |
+| Typosquatting Detection | ✅ | ✅ |
+| Email Header Analysis | ✅ | ✅ |
+| WHOIS / Domain Intelligence | ✅ | ✅ |
+| Explainable Risk Engine | ✅ | ✅ |
+| CSV Export | ✅ | ✅ |
+| JSON Export | ✅ | ✅ |
+| **Persistent SQLite Scan History** | ❌ | ✅ |
+| **History Dashboard** | ❌ | ✅ |
+| **Dashboard Reconstruction After Server Restart** | ❌ | ✅ |
+| **Export Previous Scan Results** | ❌ | ✅ |
+| **Clear Scan History** | ❌ | ✅ |
+
+### ✨ New Features in v3.1
+
+- 🗄️ **Persistent SQLite History**
+  - Every scan is automatically stored in a local SQLite database (`scan_history.db`).
+  - Scan results remain available even after closing or restarting the application.
+
+- 📜 **History Dashboard**
+  - View all previously scanned emails.
+  - Filter and revisit historical scan results.
+
+- 🔄 **Dashboard Reconstruction**
+  - Previously generated dashboards can be reconstructed directly from the database after application restart.
+
+- 📥 **Historical Report Export**
+  - Export any previous scan as **CSV** or **JSON** without rescanning the email.
+
+- 🧹 **Clear History**
+  - Remove all stored scan history from the application with a single click.
+
+> **Note:** Version 3.1 is fully backward compatible with Version 3.0 while introducing persistent storage and historical analysis capabilities.
 
 ## Architecture
 
