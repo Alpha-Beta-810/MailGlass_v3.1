@@ -1,0 +1,19 @@
+From: McKinsey Insights <insights@links.mckinsey.com>
+Subject: Your weekly briefing from McKinsey
+Content-Type: multipart/alternative; boundary="BOUNDARY"
+
+--BOUNDARY
+Content-Type: text/plain; charset="utf-8"
+
+Read our latest briefing at https://mckinsey.com/insights (no tracking).
+
+--BOUNDARY
+Content-Type: text/html; charset="utf-8"
+
+<html><body>
+<p>Read our latest thinking:</p>
+<a href="https://links.mckinsey.com/abc123">McKinsey.org</a>
+<p>Or visit us directly: <a href="https://www.mckinsey.com/careers">Careers</a></p>
+<p><a href="mailto:someone@example.com">Email us</a></p>
+</body></html>
+--BOUNDARY--

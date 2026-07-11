@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · PhishGlass{% endblock %}
+{% block content %}
+
+<section class="dash-head">
+  <div>
+    <p class="eyebrow">SCAN RESULTS</p>
+    <h1>{{ stats.total }} email{{ 's' if stats.total != 1 else '' }} analyzed</h1>
+    {% if skipped %}
+      <p class="hero-sub">{{ skipped }} uploaded file(s) were skipped (not .eml).</p>
+    {% endif %}
+  </div>
+  <div class="dash-actions">
+    <a class="btn-secondary" href="{{ url_for('download', run_id=run_id, fmt='csv') }}">Download CSV</a>
+    <a class="btn-secondary" href="{{ url_for('download', run_id=run_id, fmt='json') }}">Download JSON</a>
+    <a class="btn-primary" href="{{ url_for('index') }}">New scan</a>
+  </div>
+</section>
+
+<section class="stat-grid">
+  <div class="stat-card">
+    <span class="stat-value">{{ stats.total }}</span>
+    <span class="stat-label">Total scanned</span>
+  </div>
+  <div class="stat-card stat-safe">
+    <span class="stat-value">{{ stats.safe }}</span>
+    <span class="stat-label">Safe</span>
+  </div>
+  <div class="stat-card stat-suspicious">
+    <span class="stat-value">{{ stats.suspicious }}</span>
+    <span class="stat-label">Suspicious</span>
+  </div>
+  <div class="stat-card stat-malicious">
+    <span class="stat-value">{{ stats.malicious }}</span>
+    <span class="stat-label">Malicious</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-value">{{ stats.avg_ml_confidence if stats.avg_ml_confidence is not none else '—' }}{% if stats.avg_ml_confidence is not none %}%{% endif %}</span>
+    <span class="stat-label">Avg. ML confidence</span>
+  </div>
+</section>
+
+{% if stats.total %}
+<section class="chart-card">
+  <div class="chart-bar-row">
+    <span class="chart-bar-label">Safe</span>
+    <div class="chart-bar-track"><div class="chart-bar-fill chart-bar-safe" style="width: {{ (stats.safe / stats.total * 100)|round(1) }}%"></div></div>
+    <span class="chart-bar-count mono">{{ stats.safe }}</span>
+  </div>
+  <div class="chart-bar-row">
+    <span class="chart-bar-label">Suspicious</span>
+    <div class="chart-bar-track"><div class="chart-bar-fill chart-bar-suspicious" style="width: {{ (stats.suspicious / stats.total * 100)|round(1) }}%"></div></div>
+    <span class="chart-bar-count mono">{{ stats.suspicious }}</span>
+  </div>
+  <div class="chart-bar-row">
+    <span class="chart-bar-label">Malicious</span>
+    <div class="chart-bar-track"><div class="chart-bar-fill chart-bar-malicious" style="width: {{ (stats.malicious / stats.total * 100)|round(1) }}%"></div></div>
+    <span class="chart-bar-count mono">{{ stats.malicious }}</span>
+  </div>
+</section>
+{% endif %}
+
+<section class="table-card">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Verdict</th>
+        <th>Risk</th>
+        <th>Confidence</th>
+        <th>Sender</th>
+        <th>Subject</th>
+        <th>URLs</th>
+        <th>Attachments</th>
+        <th>ML</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td><span class="pill pill-{{ r.verdict|lower }}">{{ r.verdict }}</span></td>
+        <td class="mono">{{ r.risk_score }}/100 <span class="row-risk-label">{{ r.risk_label }}</span></td>
+        <td><span class="confidence-badge confidence-{{ r.confidence|lower }}">{{ r.confidence }}</span></td>
+        <td class="mono truncate" title="{{ r.sender }}">{{ r.sender or '—' }}</td>
+        <td class="truncate" title="{{ r.subject }}">{{ r.subject or '—' }}</td>
+        <td class="mono">{{ r.url_count }}{% if r.malicious_urls %} <span class="inline-flag flag-bad">{{ r.malicious_urls }} bad</span>{% endif %}</td>
+        <td class="mono">{{ r.attachment_count }}{% if r.malicious_attachments %} <span class="inline-flag flag-bad">{{ r.malicious_attachments }} bad</span>{% endif %}</td>
+        <td class="mono">{% if r.ml_prediction %}{{ r.ml_confidence|round(0, 'floor')|int }}%{% else %}—{% endif %}</td>
+        <td><a class="row-link" href="{{ url_for('email_detail', run_id=run_id, filename=r.filename) }}">Details &rarr;</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}

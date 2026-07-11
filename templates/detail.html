@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}{{ result.filename }} · PhishGlass{% endblock %}
+{% block content %}
+
+<a class="back-link" href="{{ url_for('dashboard', run_id=run_id) }}">&larr; Back to dashboard</a>
+
+<section class="report-head">
+  <div class="report-meta">
+    <p class="eyebrow">EMAIL REPORT</p>
+    <h1 class="mono truncate">{{ result.filename }}</h1>
+    <dl class="meta-list">
+      <div><dt>From</dt><dd class="mono">{{ result.sender or '(unknown)' }}</dd></div>
+      <div><dt>Subject</dt><dd>{{ result.subject or '(no subject)' }}</dd></div>
+    </dl>
+  </div>
+
+  <div class="gauge-block">
+    <div class="gauge" style="--pct:{{ result.risk_score }}; --gauge-color: var(--{{ result.verdict|lower }});">
+      <div class="gauge-inner">
+        <span class="gauge-value">{{ result.risk_score }}</span>
+        <span class="gauge-max">/100</span>
+      </div>
+    </div>
+    <span class="pill pill-{{ result.verdict|lower }} pill-lg">{{ result.verdict }}</span>
+    <span class="risk-label mono">{{ result.risk_label }} risk</span>
+    <span class="confidence-badge confidence-{{ result.confidence|lower }}">Confidence: {{ result.confidence }}</span>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Threat timeline</h2>
+  {% set uv = detail.get('url_verdicts', {}) %}
+  {% set wl_count = (uv.values()|list).count('whitelisted') %}
+  {% set unknown_count = (uv.values()|list).count('unknown') %}
+  {% set mal_count = (uv.values()|list).count('malicious') %}
+  {% set susp_count = (uv.values()|list).count('suspicious') %}
+  <ol class="timeline">
+    <li><span class="timeline-step">Email parsed</span><span class="timeline-detail">{{ result.attachment_count }} attachment(s), {{ result.url_count }} URL(s) found</span></li>
+    {% if result.url_count %}
+    <li><span class="timeline-step">Whitelist check</span><span class="timeline-detail">{{ wl_count }} trusted domain(s)</span></li>
+    <li><span class="timeline-step">PhishTank / VirusTotal</span><span class="timeline-detail">{{ mal_count }} malicious, {{ susp_count }} suspicious, {{ unknown_count }} unresolved</span></li>
+    {% endif %}
+    {% if result.ml_prediction %}
+    <li><span class="timeline-step">ML fallback</span><span class="timeline-detail">{{ result.ml_prediction }} at {{ result.ml_confidence|round(0, 'floor')|int }}% confidence</span></li>
+    {% endif %}
+    {% if detail.get('typosquat_findings') or detail.get('homograph_findings') %}
+    <li><span class="timeline-step">Typosquatting / homograph check</span><span class="timeline-detail">{{ (detail.get('typosquat_findings', [])|length) + (detail.get('homograph_findings', [])|length) }} look-alike domain(s) flagged</span></li>
+    {% endif %}
+    {% if detail.get('header_findings') %}
+    <li><span class="timeline-step">Header analysis</span><span class="timeline-detail">{{ detail['header_findings']|length }} header red flag(s)</span></li>
+    {% endif %}
+    <li class="timeline-final"><span class="timeline-step">Risk score</span><span class="timeline-detail">{{ result.risk_score }}/100 &rarr; {{ result.verdict }}</span></li>
+  </ol>
+</section>
+
+{% if result.parse_errors %}
+<section class="panel panel-warning">
+  <h2>Parse warnings</h2>
+  <ul class="plain-list">
+    {% for err in result.parse_errors %}<li>{{ err }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Why this verdict &mdash; explainable score</h2>
+  {% if assessment and assessment.factors %}
+    <ul class="reason-list">
+      {% for factor in assessment.factors %}
+        <li class="{{ 'reason-up' if factor.points > 0 else 'reason-down' }}">
+          <span class="reason-points mono">{{ '+%d'|format(factor.points) if factor.points > 0 else factor.points }}</span>
+          <span class="reason-check">{{ '\u26a0' if factor.points > 0 else '\u2705' }}</span>
+          <span class="reason-text">{{ factor.reason }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-note">No risk factors triggered &mdash; nothing suspicious found.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Extracted URLs <span class="panel-count">{{ result.url_count }}</span></h2>
+  {% if detail.get('url_verdicts') %}
+    <table class="mini-table">
+      <thead><tr><th>Destination URL</th><th>Displayed as</th><th>Verdict</th></tr></thead>
+      <tbody>
+        {% for url, verdict in detail['url_verdicts'].items() %}
+        <tr>
+          <td class="mono truncate" title="{{ url }}">{{ url }}</td>
+          <td class="truncate">{{ detail['parsed'].anchor_map.get(url, '—') if detail.get('parsed') else '—' }}</td>
+          <td><span class="pill pill-sm pill-{{ 'malicious' if verdict=='malicious' else ('suspicious' if verdict=='suspicious' else ('safe' if verdict=='whitelisted' else 'neutral')) }}">{{ verdict }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty-note">No URLs found in this email.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Attachments <span class="panel-count">{{ result.attachment_count }}</span></h2>
+  {% if detail.get('attachment_verdicts') %}
+    <table class="mini-table">
+      <thead><tr><th>File</th><th>VirusTotal verdict</th></tr></thead>
+      <tbody>
+        {% for path, verdict in detail['attachment_verdicts'].items() %}
+        <tr>
+          <td class="mono truncate" title="{{ path }}">{{ path.split('/')[-1] }}</td>
+          <td><span class="pill pill-sm pill-{{ 'malicious' if verdict=='malicious' else ('safe' if verdict=='safe' else 'neutral') }}">{{ verdict }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty-note">No attachments found.</p>
+  {% endif %}
+</section>
+
+<section class="panel-grid">
+  <div class="panel">
+    <h2>ML fallback</h2>
+    {% if result.ml_prediction %}
+      <p class="ml-verdict">
+        <span class="pill pill-sm pill-{{ 'malicious' if result.ml_prediction=='PHISHING' else 'safe' }}">{{ result.ml_prediction }}</span>
+        <span class="mono">{{ result.ml_confidence|round(1) }}% confidence</span>
+      </p>
+      {% set top_features = detail.get('ml_top_features', []) %}
+      {% if top_features %}
+        <p class="ml-features-label">Top contributing model features</p>
+        <ul class="plain-list mono">
+          {% for feature in top_features %}<li>&#10003; {{ feature }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% else %}
+      <p class="empty-note">Not run &mdash; the blacklist stage was already conclusive.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>Look-alike domain checks</h2>
+    {% set homograph = detail.get('homograph_findings', []) %}
+    {% set typosquat = detail.get('typosquat_findings', []) %}
+    {% if homograph or typosquat %}
+      <ul class="plain-list">
+        {% for f in typosquat %}<li>&#9888; Typosquat: {{ f }}</li>{% endfor %}
+        {% for f in homograph %}<li>&#9888; Homograph: {{ f }}</li>{% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-note">No look-alike or homograph domains detected.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>Domain age (WHOIS)</h2>
+    {% if detail.get('domain_ages') %}
+      <ul class="plain-list mono">
+        {% for domain, age in detail['domain_ages'].items() %}
+          <li>{{ domain }} &mdash; {{ age }} day(s) old{% if age < 30 %} <span class="inline-flag flag-bad">&lt;30d</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-note">Not checked for this scan.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>Email headers</h2>
+    {% set parsed_email = detail.get('parsed') %}
+    {% if parsed_email %}
+      <dl class="meta-list mono">
+        <div><dt>Reply-To</dt><dd class="truncate">{{ parsed_email.reply_to or '(not set)' }}</dd></div>
+        <div><dt>Return-Path</dt><dd class="truncate">{{ parsed_email.return_path or '(not set)' }}</dd></div>
+        <div><dt>Received hops</dt><dd>{{ parsed_email.received_hop_count }}</dd></div>
+        <div><dt>SPF</dt><dd><span class="pill pill-sm pill-{{ 'safe' if parsed_email.spf_result == 'pass' else ('malicious' if parsed_email.spf_result == 'fail' else 'neutral') }}">{{ parsed_email.spf_result or 'not found' }}</span></dd></div>
+        <div><dt>DKIM</dt><dd><span class="pill pill-sm pill-{{ 'safe' if parsed_email.dkim_result == 'pass' else ('malicious' if parsed_email.dkim_result == 'fail' else 'neutral') }}">{{ parsed_email.dkim_result or 'not found' }}</span></dd></div>
+        <div><dt>DMARC</dt><dd><span class="pill pill-sm pill-{{ 'safe' if parsed_email.dmarc_result == 'pass' else ('malicious' if parsed_email.dmarc_result == 'fail' else 'neutral') }}">{{ parsed_email.dmarc_result or 'not found' }}</span></dd></div>
+      </dl>
+      {% if detail.get('header_findings') %}
+        <ul class="plain-list">
+          {% for f in detail['header_findings'] %}<li>&#9888; {{ f }}</li>{% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-note">No Reply-To/Return-Path mismatches or auth failures detected.</p>
+      {% endif %}
+    {% else %}
+      <p class="empty-note">Header data unavailable for this email.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

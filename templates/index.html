@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Scan emails · MailGlass{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <p class="eyebrow">SCAN BAY</p>
+  <h1>Drop the suspicious mail here.<br>We'll tell you what it really is.</h1>
+  <p class="hero-sub">
+    Every URL is checked against its real hyperlink destination (not the visible text),
+    cross-referenced with PhishTank, VirusTotal, and a machine-learning fallback,
+    then combined into one explainable risk score.
+  </p>
+</section>
+
+<form class="upload-card" action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data">
+  <label class="dropzone" for="eml_files" id="dropzone">
+    <input type="file" id="eml_files" name="eml_files" accept=".eml" multiple required>
+    <div class="dropzone-inner">
+      <span class="dropzone-icon">&#9673;</span>
+      <span class="dropzone-title">Choose or drop .eml files</span>
+      <span class="dropzone-sub">Multiple files supported &middot; nothing is uploaded until you scan</span>
+      <span class="dropzone-filelist" id="fileList"></span>
+    </div>
+  </label>
+
+  <div class="options-row">
+    <label class="toggle">
+      <input type="checkbox" name="resolve_redirects">
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label">
+        Resolve tracking-link redirects
+        <span class="toggle-hint">Follow shortener/tracking URLs to their real destination first (slower, needs network)</span>
+      </span>
+    </label>
+    <label class="toggle">
+      <input type="checkbox" name="check_domain_age">
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label">
+        Check domain age (WHOIS)
+        <span class="toggle-hint">Flag recently-registered sender/link domains &lt;30 days old (slower, needs network)</span>
+      </span>
+    </label>
+  </div>
+
+  <button type="submit" class="btn-primary">Run analysis</button>
+</form>
+
+<section class="pipeline-strip">
+  <span class="pipeline-step">Parse</span>
+  <span class="pipeline-arrow">&rarr;</span>
+  <span class="pipeline-step">Extract real URLs</span>
+  <span class="pipeline-arrow">&rarr;</span>
+  <span class="pipeline-step">Whitelist</span>
+  <span class="pipeline-arrow">&rarr;</span>
+  <span class="pipeline-step">PhishTank</span>
+  <span class="pipeline-arrow">&rarr;</span>
+  <span class="pipeline-step">VirusTotal</span>
+  <span class="pipeline-arrow">&rarr;</span>
+  <span class="pipeline-step">ML fallback</span>
+  <span class="pipeline-arrow">&rarr;</span>
+  <span class="pipeline-step">Header + WHOIS checks</span>
+  <span class="pipeline-arrow">&rarr;</span>
+  <span class="pipeline-step pipeline-step-final">Risk score</span>
+</section>
+
+<script>
+  const input = document.getElementById('eml_files');
+  const fileList = document.getElementById('fileList');
+  const dropzone = document.getElementById('dropzone');
+
+  input.addEventListener('change', () => {
+    if (input.files.length === 0) {
+      fileList.textContent = '';
+      return;
+    }
+    const names = Array.from(input.files).map(f => f.name);
+    fileList.textContent = names.length <= 4
+      ? names.join(', ')
+      : `${names.slice(0, 4).join(', ')}, +${names.length - 4} more`;
+  });
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('dropzone-active'); })
+  );
+  ['dragleave', 'drop'].forEach(evt =>
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('dropzone-active'); })
+  );
+  dropzone.addEventListener('drop', e => {
+    if (e.dataTransfer.files.length) {
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+{
+  "emails_dir": "emails",
+  "whitelist_file": "whitelist.json",
+  "model_path": "phishing_email_model_fixed.pkl",
+  "resolve_redirects": false,
+  "check_domain_age": false,
+  "output_csv": "results.csv",
+  "output_json": "results.json",
+  "log_level": "INFO"
+}

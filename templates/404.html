@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Not found · PhishGlass{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">404</p>
+  <h1>Nothing scanned here.</h1>
+  <p class="hero-sub">This scan may have expired (results only live as long as the server process does), or the link is wrong.</p>
+  <a class="btn-primary" href="{{ url_for('index') }}">Start a new scan</a>
+</section>
+{% endblock %}

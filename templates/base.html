@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}MailGlass_v3.1{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="scanlines" aria-hidden="true"></div>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="brand-mark">&#9673;</span>
+    <span class="brand-text">
+        🔍Mail<span class="brand-accent">Glass</span><span class="brand-version">_v3.1</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="{{ url_for('index') }}">Scan</a>
+    <a href="{{ url_for('history') }}">History</a>
+  </nav>
+  <span class="topbar-tag">hybrid blacklist + ML email triage</span>
+</header>
+
+<main class="page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <span>MailGlass &middot; local analysis, nothing leaves this machine except outbound reputation lookups</span>
+</footer>
+</body>
+</html>
